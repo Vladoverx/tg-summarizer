@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    container_name: tg-summarizer
+    env_file: .env
+    volumes:
+      # Persist SQLite DB and logs outside the container
+      - ./data:/data
+      - ./logs:/app/logs
+    environment:
+      # Point SQLAlchemy to a file inside the mounted /data folder by default
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////data/tg_summarizer.db}
+      # Configure Qdrant URL for cloud deployment (must be set in .env)
+      - QDRANT_URL=${QDRANT_URL}
+      - QDRANT_API_KEY=${QDRANT_API_KEY:-}
+      # Store Telethon session in the mounted /data directory
+      - TELEGRAM_SESSION_NAME=${TELEGRAM_SESSION_NAME:-/data/collector_session}
+      # Embedder config (override in .env as needed)
+      - EMBEDDER_TYPE=${EMBEDDER_TYPE:-openai}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    restart: unless-stopped
+
+
+

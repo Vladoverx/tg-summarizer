@@ -1,0 +1,11 @@
+.env
+data/
+*.session
+__pycache__/
+.venv/
+.cursor
+.vscode
+alembic.ini
+alembic/
+*.egg-info
+logs/
