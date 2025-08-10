@@ -55,13 +55,13 @@ Data model highlights (`src/db/models.py`):
 1) Clone and enter the project
 
 ```powershell
-git clone https://github.com/your-org/tg-summarizer.git
+git clone https://github.com/Vladoverx/tg-summarizer.git
 Set-Location tg-summarizer
 ```
 
 ```bash
 # Linux/macOS
-git clone https://github.com/your-org/tg-summarizer.git
+git clone https://github.com/Vladoverx/tg-summarizer.git
 cd tg-summarizer
 ```
 
