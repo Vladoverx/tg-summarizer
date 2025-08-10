@@ -248,6 +248,6 @@ docker compose down
 - Code style: modern Python, explicit types, minimal comments, clear names
 
 ## License
-
-Add your license of choice here.
+ 
+Apache License 2.0. See `LICENSE` for full text.
 
