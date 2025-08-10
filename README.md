@@ -80,9 +80,6 @@ cp env.example .env
 
 3) Run with Docker Compose (recommended)
 
-```powershell
-docker compose up -d --build
-```
 
 ```bash
 # Linux/macOS
@@ -92,11 +89,6 @@ docker compose up -d --build
 Alternative: run locally
 
 - Using uv:
-
-```powershell
-uv sync
-uv run tg-bot
-```
 
 ```bash
 # Linux/macOS
