@@ -70,21 +70,6 @@ def setup_logging(log_dir: Path = Path("logs"), log_level: str = "INFO"):
                 "handlers": ["console", "file"],
                 "propagate": False,
             },
-            "sentence_transformers": {
-                "level": "WARNING",
-                "handlers": ["console", "file"],
-                "propagate": False,
-            },
-            "transformers": {
-                "level": "WARNING",
-                "handlers": ["console", "file"],
-                "propagate": False,
-            },
-            "torch": {
-                "level": "WARNING",
-                "handlers": ["console", "file"],
-                "propagate": False,
-            },
         },
     }
 

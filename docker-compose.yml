@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   app:
     build: .
@@ -17,8 +15,6 @@ services:
       - QDRANT_API_KEY=${QDRANT_API_KEY:-}
       # Store Telethon session in the mounted /data directory
       - TELEGRAM_SESSION_NAME=${TELEGRAM_SESSION_NAME:-/data/collector_session}
-      # Embedder config (override in .env as needed)
-      - EMBEDDER_TYPE=${EMBEDDER_TYPE:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     restart: unless-stopped

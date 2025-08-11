@@ -12,16 +12,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Copy project metadata and install dependencies first (better layer caching)
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md ./
+
+# Copy source earlier so the local project can be installed by uv
+COPY src ./src
 
 # Install build tools and project dependencies
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir uv \
     && uv sync --frozen --no-dev
 
-# Copy the rest of the source
-COPY src ./src
-COPY README.md .
 
 # Ensure app directories exist (logs are persisted via bind/volume in compose)
 RUN mkdir -p /app/logs /data

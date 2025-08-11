@@ -9,10 +9,6 @@ dependencies = [
     "python-telegram-bot[job-queue]>=22.1",
     "sqlalchemy>=2.0.41",
     "telethon>=1.40.0",
-    "sentence-transformers>=4.1.0",
-    "torch>=2.7.1",
-    "hf-xet>=1.1.5",
-    "alembic>=1.16.2",
     "qdrant-client>=1.7.0",
     "google-genai>=1.25.0",
     "openai>=1.97.0",
@@ -22,6 +18,7 @@ dependencies = [
 
 [project.scripts]
 tg-bot = "bot.main:main"
+tg-login = "utils.telethon_login:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
