@@ -9,7 +9,7 @@ Turn noisy Telegram feeds into a clean, personalized daily brief. Distill collec
 - Daily summaries at a fixed time (Europe/Kyiv) with engaging, concise formatting
 - Multilingual UX (English, Ukrainian) with per-user language setting
 - Vector search filtering via Qdrant for semantic relevance
-- Pluggable embeddings (OpenAI or Sentence-Transformers)
+- Embeddings: OpenAI
 - Admin monitoring via Telegram notifications and structured JSON logs
 
 ## Architecture at a glance
@@ -39,8 +39,8 @@ Data model highlights (`src/db/models.py`):
 - Telegram: `python-telegram-bot` (bot), `telethon` (collection)
 - Vector DB: Qdrant
 - LLM: Google Gemini (`google-genai`)
-- Embeddings: OpenAI or Sentence-Transformers
-- ORM: SQLAlchemy, migrations via Alembic (optional)
+- Embeddings: OpenAI
+- ORM: SQLAlchemy
 
 ## Prerequisites
 
@@ -86,6 +86,46 @@ cp env.example .env
 docker compose up -d --build
 ```
 
+4) One-time Telethon login (required)
+
+Telethon needs a one-time, interactive login to create a session file. Do this once after starting the container; the session will be persisted under `./data`.
+
+- Open a shell in the running container:
+
+```powershell
+docker compose exec app sh
+```
+
+- Run the login helper (follow prompts for the code and 2FA password if enabled):
+  Preferred (uses project deps):
+
+```sh
+uv run tg-login
+```
+
+  If `uv` is not available in the container for any reason, you can still run the module directly:
+
+```sh
+python -m utils.telethon_login
+```
+
+Expected:
+
+- You see `Authorized: True`.
+- A session file appears on the host at `./data/collector_session.session` (or matching `TELEGRAM_SESSION_NAME`).
+
+- Exit the container shell:
+
+```sh
+exit
+```
+
+Optional: restart the app service to ensure a clean state
+
+```powershell
+docker compose restart app
+```
+
 Alternative: run locally
 
 - Using uv:
@@ -125,7 +165,7 @@ Database
 
 Telegram
 
-- `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_PHONE` — account used by the collector
+- `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEGRAM_PHONE` — account used by the collector (required)
 - `BOT_TOKEN` — Telegram bot token
 - `ADMIN_CHAT_ID` — chat ID for admin notifications (optional but recommended)
 
@@ -137,13 +177,12 @@ Qdrant
 LLM and embeddings
 
 - `GEMINI_API_KEY` — required for summaries
-- `OPENAI_API_KEY` — required if `EMBEDDER_TYPE=openai`
-- `EMBEDDER_TYPE` — `openai` (default) or `sentence_transformer`
+- `OPENAI_API_KEY` — required for embeddings
 
 Notes
 
-- For `sentence_transformer`, the default model is `lang-uk/ukr-paraphrase-multilingual-mpnet-base`.
-- For OpenAI embeddings, default model is `text-embedding-3-small` (1536-dim).
+- OpenAI embeddings default model: `text-embedding-3-small` (1536-dim).
+ - Telethon session file is stored under `./data` by default (`TELEGRAM_SESSION_NAME` defaults to `/data/collector_session` inside the container). Perform the one-time login as shown above.
 
 ## What happens at runtime
 
@@ -178,9 +217,10 @@ Summary generation:
 
 - Missing Qdrant config: set `QDRANT_URL` (and `QDRANT_API_KEY` if needed)
 - Missing Gemini key: set `GEMINI_API_KEY`
-- OpenAI embeddings enabled but no key: set `OPENAI_API_KEY` or switch to `EMBEDDER_TYPE=sentence_transformer`
+- OpenAI embeddings enabled but no key: set `OPENAI_API_KEY`
 - Telegram 2FA: Telethon will require manual handling if 2FA is enabled on the collector account
 - Rate limits: Telethon may raise `FloodWaitError`; the collector backs off automatically
+- EOF / AuthKeyUnregistered errors when validating sources: perform the one-time Telethon login inside the container (see Quickstart step 4) so the session file is created and persisted.
 
 ## Deploy with Docker Compose
 

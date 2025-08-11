@@ -106,6 +106,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         if is_new_user:
             notifier = get_notifier()
             if notifier:
+                session.flush()
                 total_users = session.query(User).count()
                 await notifier.notify_new_user(
                     username=user.username or str(user.id),
@@ -966,6 +967,7 @@ async def handle_removal(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
             if ut:
                 session.delete(ut)
+                session.flush()
 
                 # Notify admin about topic removal
                 notifier = get_notifier()
