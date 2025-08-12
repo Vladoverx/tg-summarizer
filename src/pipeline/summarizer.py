@@ -580,6 +580,22 @@ def _format_source_result(result, messages_data, user_language, extra_context):
         if not display:
             display = str(source_key)
         source_display_map[str(source_key)] = display
+    
+    def _normalize_source_key(value: str) -> str:
+        text = str(value or "").strip()
+        text = text.lstrip('@')
+        # remove non-alphanumeric to make underscores/dots/hyphens equivalent
+        return re.sub(r"[^a-zA-Z0-9]", "", text).lower()
+
+    def _find_source_key_match(candidates: Dict[str, str], query: str) -> Optional[str]:
+        # exact match first
+        if query in candidates:
+            return query
+        qn = _normalize_source_key(query)
+        for key in candidates.keys():
+            if _normalize_source_key(key) == qn:
+                return key
+        return None
     if result.get("source_summaries"):
         summary_parts = []
         if result.get("overall_headline"):
@@ -590,7 +606,10 @@ def _format_source_result(result, messages_data, user_language, extra_context):
             )
         for ss in result["source_summaries"]:
             raw_source = str(ss.get("source", ""))
-            display_source = source_display_map.get(raw_source) or f"@{raw_source.lstrip('@')}"
+            matched_key = _find_source_key_match(source_display_map, raw_source)
+            display_source = (
+                source_display_map.get(matched_key) if matched_key is not None else f"@{raw_source.lstrip('@')}"
+            )
             summary_parts.append(f"{display_source}")
             if ss.get("brief"):
                 summary_parts.append(f"{ss['brief']}\n")
