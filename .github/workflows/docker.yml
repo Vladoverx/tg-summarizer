@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+
+  deploy:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: self-hosted
+    steps:
+      - name: Deploy on self-hosted runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          TARGET_DIR=/tg-summarizer
+          if [ ! -d "$TARGET_DIR/.git" ]; then
+            echo "Repository not found at $TARGET_DIR. Clone it and place .env there." >&2
+            exit 1
+          fi
+          git -C "$TARGET_DIR" fetch --all --prune
+          git -C "$TARGET_DIR" checkout main
+          git -C "$TARGET_DIR" pull --ff-only
+          docker compose -f "$TARGET_DIR/docker-compose.prod.yml" pull | cat
+          docker compose -f "$TARGET_DIR/docker-compose.prod.yml" up -d
+
+

@@ -1,0 +1,18 @@
+services:
+  app:
+    image: ghcr.io/Vladoverx/tg-summarizer:latest
+    container_name: tg-summarizer
+    env_file: .env
+    volumes:
+      - ./data:/data
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////data/tg_summarizer.db}
+      - QDRANT_URL=${QDRANT_URL}
+      - QDRANT_API_KEY=${QDRANT_API_KEY:-}
+      - TELEGRAM_SESSION_NAME=${TELEGRAM_SESSION_NAME:-/data/collector_session}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    restart: unless-stopped
+
+
