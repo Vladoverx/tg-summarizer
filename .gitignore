@@ -9,3 +9,4 @@ alembic.ini
 alembic/
 *.egg-info
 logs/
+copilot/

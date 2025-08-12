@@ -15,7 +15,7 @@ from utils.monitoring import get_notifier
 from utils.user_tracker import get_user_tracker
 from utils.source_validator import validate_sources_batch, format_validation_result
 from utils.i18n import Language, detect_user_language, get_text
-from utils.text_utils import split_markdown_text
+from utils.text_utils import split_text_safely
 from utils.stats_tracker import get_user_stats, calculate_time_saved, format_time_duration
 
 from .keyboards import (
@@ -469,8 +469,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                     summaries_count += 1
                     message_text = summary.content
 
-                    # Split text safely to avoid breaking Markdown entities
-                    chunks = split_markdown_text(message_text, max_chunk_size=4096)
+                    # Split text safely to avoid breaking formatting entities
+                    chunks = split_text_safely(message_text, max_chunk_size=4096)
                     user_failed = False
                     for chunk in chunks:
                         try:

@@ -24,7 +24,7 @@ from pipeline.summarizer import generate_summaries_async, get_user_summaries
 from utils.monitoring import Notifier, set_notifier, get_notifier
 from utils.user_tracker import init_user_tracker, get_user_tracker
 from utils.logging_config import setup_logging
-from utils.text_utils import split_markdown_text
+from utils.text_utils import split_text_safely
 from utils.stats_tracker import get_user_stats, calculate_time_saved, format_time_duration
 from utils.i18n import Language, get_text
 
@@ -162,15 +162,15 @@ async def send_daily_summaries(context: ContextTypes.DEFAULT_TYPE) -> None:
             summaries_count += 1
             message_text = summary.content
 
-            # Split text safely to avoid breaking Markdown entities
-            chunks = split_markdown_text(message_text, max_chunk_size=4096)
+            # Split text safely to avoid breaking formatting entities
+            chunks = split_text_safely(message_text, max_chunk_size=4096)
             user_failed = False
             for chunk in chunks:
                 try:
                     await context.bot.send_message(
                         chat_id=user.telegram_id,
                         text=chunk,
-                        parse_mode="Markdown",
+                        parse_mode="HTML",
                     )
                 except Exception as e:
                     if tracker:

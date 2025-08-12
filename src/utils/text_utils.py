@@ -44,10 +44,10 @@ def clean_text(text: str) -> str:
     return text
 
 
-def split_markdown_text(text: str, max_chunk_size: int = 4096) -> List[str]:
+def split_text_safely(text: str, max_chunk_size: int = 4096) -> List[str]:
     """
-    Split text into chunks while preserving Markdown formatting.
-    Ensures chunks don't break in the middle of Markdown entities.
+    Split long text into reasonably sized chunks without breaking common
+    formatting constructs. Works with plain text, Markdown, or simple HTML.
     """
     if len(text) <= max_chunk_size:
         return [text]
