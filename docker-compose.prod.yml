@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/Vladoverx/tg-summarizer:latest
+    image: ghcr.io/vladoverx/tg-summarizer:latest
     container_name: tg-summarizer
     env_file: .env
     volumes:
