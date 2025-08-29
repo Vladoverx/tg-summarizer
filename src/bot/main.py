@@ -16,7 +16,8 @@ from telegram.ext import (
 from zoneinfo import ZoneInfo
 
 from db.database import SessionLocal, create_tables
-from db.models import User
+from db.models import User, ProcessingStats
+from sqlalchemy import func
 from db.qdrant_utils import cleanup_old_vectors
 from pipeline.collector import run_collection
 from pipeline.filter import filter_messages_async
@@ -89,14 +90,43 @@ async def send_daily_summaries(context: ContextTypes.DEFAULT_TYPE) -> None:
     sent_count = 0
     failed_count = 0
 
-    try:
-        await generate_summaries_async(days_back=1)
-        generation_duration = time.time() - start_time
-    except Exception as e:
-        logger.exception(f"Failed to generate summaries: {e}")
+    # Guardrail: skip generation if nothing collected/filtered today
+    should_skip_generation = False
+    with SessionLocal() as session:
+        try:
+            from datetime import datetime, timezone
+            today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            agg = (
+                session.query(
+                    func.coalesce(func.sum(ProcessingStats.messages_collected), 0),
+                    func.coalesce(func.sum(ProcessingStats.messages_filtered), 0),
+                )
+                .filter(ProcessingStats.date == today)
+                .one()
+            )
+            total_collected, total_filtered = agg[0], agg[1]
+            if (total_collected or 0) <= 0 and (total_filtered or 0) <= 0:
+                should_skip_generation = True
+        except Exception as e:
+            logger.warning(f"Failed to evaluate guardrail for summaries: {e}")
+
+    generation_duration = 0.0
+    if not should_skip_generation:
+        try:
+            await generate_summaries_async(days_back=1)
+            generation_duration = time.time() - start_time
+        except Exception as e:
+            logger.exception(f"Failed to generate summaries: {e}")
+            if notifier:
+                await notifier.notify_error("Summary Generation", str(e))
+            return
+    else:
+        logger.info("Skipping summary generation due to zero collection/filtering today")
         if notifier:
-            await notifier.notify_error("Summary Generation", str(e))
-        return
+            await notifier.notify_system_performance(
+                "summaries_generated",
+                {"summaries_count": 0, "users_count": "N/A", "duration": 0, "skipped": True},
+            )
 
     with SessionLocal() as session:
         users: List[User] = session.query(User).filter(User.telegram_id.isnot(None)).all()

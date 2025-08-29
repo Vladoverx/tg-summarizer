@@ -1,7 +1,7 @@
 import asyncio
 import argparse
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import selectinload
@@ -80,12 +80,24 @@ async def _filter_for_user(
     messages_filtered = 0
     topics_with_hits: set[str] = set()
 
+    # Only search messages from user's sources and not older than date_threshold (UTC seconds)
+    date_threshold_utc = date_threshold
+    if date_threshold_utc.tzinfo is None:
+        date_threshold_utc = date_threshold_utc.replace(tzinfo=timezone.utc)
+    else:
+        date_threshold_utc = date_threshold_utc.astimezone(timezone.utc)
     payload_filter = qmodels.Filter(
         must=[
             qmodels.FieldCondition(
                 key="source_id",
                 match=qmodels.MatchAny(any=source_ids),
-            )
+            ),
+            qmodels.FieldCondition(
+                key="message_date_ts",
+                range=qmodels.Range(
+                    gte=int(date_threshold_utc.timestamp())
+                ),
+            ),
         ]
     )
 
@@ -170,7 +182,7 @@ async def filter_messages_async(
     Returns:
         Dict with aggregate counters: {"users_processed", "messages_filtered", "topics_matched"}
     """
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     date_threshold = (now - timedelta(days=days_back)).replace(hour=0, minute=0, second=0, microsecond=0)
 
     with SessionLocal() as session:

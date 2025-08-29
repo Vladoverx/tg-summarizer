@@ -27,8 +27,8 @@ class User(Base):
     telegram_id: Mapped[Optional[int]] = mapped_column(BigInteger, unique=True, nullable=True)
     username: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     language: Mapped[str] = mapped_column(String(2), default="en", nullable=False)  # User's preferred language
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
     sources: Mapped[List["Source"]] = relationship("Source", secondary=user_sources, back_populates="users")
@@ -49,8 +49,8 @@ class Source(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     username: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
     users: Mapped[List["User"]] = relationship("User", secondary=user_sources, back_populates="sources")
@@ -66,8 +66,8 @@ class UserTopic(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     topic: Mapped[str] = mapped_column(String(255), nullable=False)
     embedding: Mapped[Optional[List[float]]] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     user: Mapped["User"] = relationship("User", back_populates="user_topics")
 
@@ -84,8 +84,8 @@ class Message(Base):
     source_id: Mapped[int] = mapped_column(ForeignKey("sources.id"), nullable=False)
     telegram_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    message_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    collected_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    message_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    collected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
     source: Mapped["Source"] = relationship("Source", back_populates="messages")
@@ -106,9 +106,9 @@ class FilteredMessage(Base):
     source_id: Mapped[int] = mapped_column(ForeignKey("sources.id"), nullable=False)
     topic: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    message_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    message_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     similarity_score: Mapped[float] = mapped_column(Float, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="filtered_messages")
@@ -126,7 +126,7 @@ class ProcessingStats(Base):
     
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     
     # Collection stats
     messages_collected: Mapped[int] = mapped_column(Integer, default=0)
@@ -141,7 +141,7 @@ class ProcessingStats(Base):
     collection_time: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     filtering_time: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="processing_stats")
@@ -160,7 +160,7 @@ class Summary(Base):
     title: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     topic: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="summaries")

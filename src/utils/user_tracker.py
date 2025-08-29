@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Set
 from telegram import Bot
 from telegram.error import Forbidden, TelegramError
@@ -61,12 +61,12 @@ class UserStatusTracker:
     
     def update_user_activity(self, user_id: int) -> None:
         """Update the last activity timestamp for a user."""
-        self.last_activity[user_id] = datetime.now()
+        self.last_activity[user_id] = datetime.now(timezone.utc)
     
     async def check_inactive_users(self, inactive_days_threshold: int = 7) -> List[Dict]:
         """Check for users who haven't been active for a specified number of days."""
         inactive_users = []
-        threshold_date = datetime.now() - timedelta(days=inactive_days_threshold)
+        threshold_date = datetime.now(timezone.utc) - timedelta(days=inactive_days_threshold)
         
         with SessionLocal() as session:
             users = session.query(User).all()
@@ -85,7 +85,7 @@ class UserStatusTracker:
                     last_seen = user.created_at
                 
                 if last_seen and last_seen < threshold_date:
-                    days_inactive = (datetime.now() - last_seen).days
+                    days_inactive = (datetime.now(timezone.utc) - last_seen).days
                     inactive_users.append({
                         'user_id': user_id,
                         'telegram_id': telegram_id,

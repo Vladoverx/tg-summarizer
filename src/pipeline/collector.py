@@ -172,7 +172,14 @@ class TelegramCollector:
             ):
                 stats["messages_processed"] += 1
                 
-                if min_date and message.date < min_date:
+                # Normalize Telethon datetime to UTC-aware before comparisons
+                msg_dt = message.date
+                if msg_dt.tzinfo is None:
+                    msg_dt = msg_dt.replace(tzinfo=timezone.utc)
+                else:
+                    msg_dt = msg_dt.astimezone(timezone.utc)
+
+                if min_date and msg_dt < min_date:
                     stats["skipped_old"] += 1
                     break
                 
@@ -184,7 +191,7 @@ class TelegramCollector:
                 message_data = {
                     "telegram_id": message.id,
                     "content": message.text,
-                    "message_date": message.date,
+                    "message_date": msg_dt,
                     "entity_info": entity_info,  # Only for source creation
                 }
                 
@@ -389,7 +396,21 @@ class TelegramCollector:
                 logger.warning(f"No embeddings generated for {src_display}")
                 return
             ids = [m.id for m in valid_messages]
-            payloads = [{"source_id": message.source_id} for message in valid_messages]
+            payloads = []
+            for message in valid_messages:
+                dt = message.message_date
+                if dt is None:
+                    ts = None
+                else:
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
+                    else:
+                        dt = dt.astimezone(timezone.utc)
+                    ts = int(dt.timestamp())
+                payloads.append({
+                    "source_id": message.source_id,
+                    "message_date_ts": ts if ts is not None else 0,
+                })
             await upsert_message_vectors(ids, vectors, payloads)
             logger.info(f"Successfully upserted {len(valid_messages)} vectors for {src_display}")
         except Exception as e:

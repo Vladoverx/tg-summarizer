@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 from contextlib import contextmanager
 import time
@@ -20,7 +20,8 @@ class StatsTracker:
     
     def __init__(self, user_id: int, date: Optional[datetime] = None):
         self.user_id = user_id
-        self.date = (date or datetime.now()).replace(hour=0, minute=0, second=0, microsecond=0)
+        base = date or datetime.now(timezone.utc)
+        self.date = base.replace(hour=0, minute=0, second=0, microsecond=0)
         self.stats = {}
         
     def _get_or_create_stats(self, session) -> ProcessingStats:
@@ -153,7 +154,7 @@ def track_filtering_time(user_id: int, date: Optional[datetime] = None):
 
 def get_user_stats(user_id: int, days_back: int = 1) -> Optional[ProcessingStats]:
     """Get the most recent processing statistics for a user"""
-    target_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    target_date = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     
     with SessionLocal() as session:
         stats = session.query(ProcessingStats).filter(

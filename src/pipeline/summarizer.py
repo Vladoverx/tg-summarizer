@@ -5,7 +5,7 @@ import os
 import re
 from typing import List, Optional, Dict, Any
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import selectinload
 
 from google import genai
@@ -69,7 +69,7 @@ async def generate_summaries_async(
     """
     client = get_gemini_client()
     
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     date_threshold = (now - timedelta(days=days_back)).replace(
         hour=0, minute=0, second=0, microsecond=0
     )
@@ -799,7 +799,7 @@ def get_user_summaries(
     Get user summaries.
     """
     with SessionLocal() as session:
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         date_threshold = (now - timedelta(days=days_back)).replace(hour=0, minute=0, second=0, microsecond=0)
         
         query = (

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from typing import List, Dict, Any
+import asyncio
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http import models as qmodels
@@ -69,6 +70,16 @@ async def ensure_payload_indexes(collection_name: str) -> None:
     try:
         await client.create_payload_index(
             collection_name=collection_name,
+            field_name="message_date_ts",
+            field_schema=qmodels.PayloadSchemaType.INTEGER,
+        )
+        logger.info("Created payload index for 'message_date_ts' field in collection '%s'", collection_name)
+    except Exception as e:
+        logger.exception("Could not create message_date_ts index (may already exist): %s", e)
+    
+    try:
+        await client.create_payload_index(
+            collection_name=collection_name,
             field_name="source",
             field_schema=qmodels.PayloadSchemaType.KEYWORD,
         )
@@ -91,14 +102,28 @@ async def upsert_message_vectors(
     if payloads is None:
         payloads = [{} for _ in message_ids]
 
-    await client.upsert(
-        collection_name=collection_name,
-        points=[
-            qmodels.PointStruct(id=m_id, vector=vec, payload=pld)
-            for m_id, vec, pld in zip(message_ids, vectors, payloads)
-        ],
-        wait=True,
-    )
+    attempt = 0
+    last_err: Exception | None = None
+    while attempt < 3:
+        try:
+            await client.upsert(
+                collection_name=collection_name,
+                points=[
+                    qmodels.PointStruct(id=m_id, vector=vec, payload=pld)
+                    for m_id, vec, pld in zip(message_ids, vectors, payloads)
+                ],
+                wait=True,
+            )
+            last_err = None
+            break
+        except Exception as e:
+            last_err = e
+            logger.warning("Qdrant upsert attempt %d failed: %s", attempt + 1, e)
+            await asyncio.sleep(2 ** attempt)
+            attempt += 1
+    if last_err is not None:
+        logger.exception("Qdrant upsert failed after retries: %s", last_err)
+        raise last_err
 
     logger.info("Upserted %d vectors into Qdrant collection '%s'", len(message_ids), collection_name) 
 
@@ -119,7 +144,7 @@ async def cleanup_old_vectors(
         Number of vectors deleted (or would be deleted if dry_run=True)
     """
     client = get_qdrant_client()
-    cutoff_date = datetime.now() - timedelta(days=days_to_keep)
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_to_keep)
     
     with SessionLocal() as session:
         old_message_ids = session.query(Message.id).filter(
