@@ -2,6 +2,7 @@ import os
 import logging
 from datetime import datetime
 from typing import Optional, Dict, Any
+from html import escape
 from telegram import Bot
 from telegram.error import TelegramError
 
@@ -18,7 +19,7 @@ class Notifier:
         if not self.admin_chat_id:
             logger.warning("ADMIN_CHAT_ID not set - monitoring notifications disabled")
     
-    async def _send_notification(self, message: str, parse_mode: str = 'Markdown') -> bool:
+    async def _send_notification(self, message: str, parse_mode: str = 'HTML') -> bool:
         """Send a notification message to the admin chat."""
         if not self.admin_chat_id:
             logger.debug("Admin chat ID not configured - skipping notification")
@@ -39,11 +40,11 @@ class Notifier:
         """Notify admin when a user blocks the bot."""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         message = (
-            f"🚫 **Bot Blocked**\n\n"
-            f"👤 User: @{username}\n"
-            f"🆔 Telegram ID: `{telegram_id}`\n"
+            f"🚫 <b>Bot Blocked</b>\n\n"
+            f"👤 User: @{escape(str(username))}\n"
+            f"🆔 Telegram ID: <code>{escape(str(telegram_id))}</code>\n"
             f"❌ Status: Bot has been blocked by user\n"
-            f"🕒 Time: {timestamp}"
+            f"🕒 Time: {escape(timestamp)}"
         )
         await self._send_notification(message)
     
@@ -51,11 +52,11 @@ class Notifier:
         """Notify admin when a previously blocked user returns."""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         message = (
-            f"✅ **User Returned**\n\n"
-            f"👤 User: @{username}\n"
-            f"🆔 Telegram ID: `{telegram_id}`\n"
+            f"✅ <b>User Returned</b>\n\n"
+            f"👤 User: @{escape(str(username))}\n"
+            f"🆔 Telegram ID: <code>{escape(str(telegram_id))}</code>\n"
             f"🔓 Status: User unblocked the bot\n"
-            f"🕒 Time: {timestamp}"
+            f"🕒 Time: {escape(timestamp)}"
         )
         await self._send_notification(message)
     
@@ -63,12 +64,12 @@ class Notifier:
         """Notify admin about inactive users (potential churn)."""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         message = (
-            f"😴 **Inactive User Alert**\n\n"
-            f"👤 User: @{username}\n"
-            f"🆔 Telegram ID: `{telegram_id}`\n"
-            f"📅 Days Inactive: {days_inactive}\n"
+            f"😴 <b>Inactive User Alert</b>\n\n"
+            f"👤 User: @{escape(str(username))}\n"
+            f"🆔 Telegram ID: <code>{escape(str(telegram_id))}</code>\n"
+            f"📅 Days Inactive: {escape(str(days_inactive))}\n"
             f"⚠️ Status: Potential churn risk\n"
-            f"🕒 Time: {timestamp}"
+            f"🕒 Time: {escape(timestamp)}"
         )
         await self._send_notification(message)
 
@@ -76,11 +77,11 @@ class Notifier:
         """Notify admin about new user registration."""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         message = (
-            f"🆕 **New User Registered**\n\n"
-            f"👤 Username: @{username}\n"
-            f"🆔 Telegram ID: `{telegram_id}`\n"
-            f"📊 Total Users: {user_count}\n"
-            f"🕒 Time: {timestamp}"
+            f"🆕 <b>New User Registered</b>\n\n"
+            f"👤 Username: @{escape(str(username))}\n"
+            f"🆔 Telegram ID: <code>{escape(str(telegram_id))}</code>\n"
+            f"📊 Total Users: {escape(str(user_count))}\n"
+            f"🕒 Time: {escape(timestamp)}"
         )
         await self._send_notification(message)
     
@@ -89,46 +90,46 @@ class Notifier:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         if activity_type == "topics_added":
-            topics = ", ".join(details.get("topics", []))
+            topics = ", ".join([escape(str(t)) for t in details.get("topics", [])])
             message = (
-                f"📝 **Topics Added**\n\n"
-                f"👤 User: @{username}\n"
+                f"📝 <b>Topics Added</b>\n\n"
+                f"👤 User: @{escape(str(username))}\n"
                 f"➕ Added: {topics}\n"
-                f"📊 Total Topics: {details.get('total_count', 'N/A')}\n"
-                f"🕒 Time: {timestamp}"
+                f"📊 Total Topics: {escape(str(details.get('total_count', 'N/A')))}\n"
+                f"🕒 Time: {escape(timestamp)}"
             )
         elif activity_type == "sources_added":
-            sources = ", ".join(details.get("sources", []))
+            sources = ", ".join([escape(str(s)) for s in details.get("sources", [])])
             message = (
-                f"📡 **Sources Added**\n\n"
-                f"👤 User: @{username}\n"
+                f"📡 <b>Sources Added</b>\n\n"
+                f"👤 User: @{escape(str(username))}\n"
                 f"➕ Added: {sources}\n"
-                f"📊 Total Sources: {details.get('total_count', 'N/A')}\n"
-                f"🕒 Time: {timestamp}"
+                f"📊 Total Sources: {escape(str(details.get('total_count', 'N/A')))}\n"
+                f"🕒 Time: {escape(timestamp)}"
             )
         elif activity_type == "topics_removed":
             message = (
-                f"🗑️ **Topic Removed**\n\n"
-                f"👤 User: @{username}\n"
-                f"➖ Removed: {details.get('topic', 'N/A')}\n"
-                f"📊 Remaining Topics: {details.get('total_count', 'N/A')}\n"
-                f"🕒 Time: {timestamp}"
+                f"🗑️ <b>Topic Removed</b>\n\n"
+                f"👤 User: @{escape(str(username))}\n"
+                f"➖ Removed: {escape(str(details.get('topic', 'N/A')))}\n"
+                f"📊 Remaining Topics: {escape(str(details.get('total_count', 'N/A')))}\n"
+                f"🕒 Time: {escape(timestamp)}"
             )
         elif activity_type == "sources_removed":
             message = (
-                f"🗑️ **Source Removed**\n\n"
-                f"👤 User: @{username}\n"
-                f"➖ Removed: {details.get('source', 'N/A')}\n"
-                f"📊 Remaining Sources: {details.get('total_count', 'N/A')}\n"
-                f"🕒 Time: {timestamp}"
+                f"🗑️ <b>Source Removed</b>\n\n"
+                f"👤 User: @{escape(str(username))}\n"
+                f"➖ Removed: {escape(str(details.get('source', 'N/A')))}\n"
+                f"📊 Remaining Sources: {escape(str(details.get('total_count', 'N/A')))}\n"
+                f"🕒 Time: {escape(timestamp)}"
             )
         else:
             message = (
-                f"📊 **User Activity**\n\n"
-                f"👤 User: @{username}\n"
-                f"🔄 Activity: {activity_type}\n"
-                f"📋 Details: {str(details)}\n"
-                f"🕒 Time: {timestamp}"
+                f"📊 <b>User Activity</b>\n\n"
+                f"👤 User: @{escape(str(username))}\n"
+                f"🔄 Activity: {escape(str(activity_type))}\n"
+                f"📋 Details: {escape(str(details))}\n"
+                f"🕒 Time: {escape(timestamp)}"
             )
         
         await self._send_notification(message)
@@ -139,9 +140,9 @@ class Notifier:
         
         if event_type == "collection_started":
             message = (
-                f"🔄 **Collection Started**\n\n"
-                f"📅 Time: {timestamp}\n"
-                f"🔄 Type: {'Initial' if details.get('is_initial') else 'Regular'}"
+                f"🔄 <b>Collection Started</b>\n\n"
+                f"📅 Time: {escape(timestamp)}\n"
+                f"🔄 Type: {escape('Initial' if details.get('is_initial') else 'Regular')}"
             )
         elif event_type == "collection_completed":
             duration = details.get('duration', 'N/A')
@@ -150,17 +151,17 @@ class Notifier:
             skipped_empty = details.get('skipped_empty')
             skipped_old = details.get('skipped_old')
             lines = [
-                "✅ **Collection Completed**\n",
-                f"📊 Messages Collected: {messages_collected}",
-                f"⏱️ Duration: {duration}s",
+                "✅ <b>Collection Completed</b>\n",
+                f"📊 Messages Collected: {escape(str(messages_collected))}",
+                f"⏱️ Duration: {escape(str(duration))}s",
             ]
             if messages_processed is not None:
-                lines.append(f"🧮 Messages Processed: {messages_processed}")
+                lines.append(f"🧮 Messages Processed: {escape(str(messages_processed))}")
             if skipped_empty is not None:
-                lines.append(f"🚫 Skipped (empty): {skipped_empty}")
+                lines.append(f"🚫 Skipped (empty): {escape(str(skipped_empty))}")
             if skipped_old is not None:
-                lines.append(f"⏳ Skipped (too old): {skipped_old}")
-            lines.append(f"📅 Time: {timestamp}")
+                lines.append(f"⏳ Skipped (too old): {escape(str(skipped_old))}")
+            lines.append(f"📅 Time: {escape(timestamp)}")
             message = "\n".join(lines)
         elif event_type == "filtering_completed":
             filtered_count = details.get('filtered_messages', 'N/A')
@@ -168,52 +169,52 @@ class Notifier:
             topics_matched = details.get('topics_matched')
             duration = details.get('duration', 'N/A')
             lines = [
-                "🎯 **Filtering Completed**\n",
-                f"📊 Messages Filtered: {filtered_count}",
-                f"⏱️ Duration: {duration}s",
+                "🎯 <b>Filtering Completed</b>\n",
+                f"📊 Messages Filtered: {escape(str(filtered_count))}",
+                f"⏱️ Duration: {escape(str(duration))}s",
             ]
             if users_processed is not None:
-                lines.append(f"👥 Users Processed: {users_processed}")
+                lines.append(f"👥 Users Processed: {escape(str(users_processed))}")
             if topics_matched is not None:
-                lines.append(f"🏷️ Topics Matched: {topics_matched}")
-            lines.append(f"📅 Time: {timestamp}")
+                lines.append(f"🏷️ Topics Matched: {escape(str(topics_matched))}")
+            lines.append(f"📅 Time: {escape(timestamp)}")
             message = "\n".join(lines)
         elif event_type == "summaries_generated":
             summaries_count = details.get('summaries_count', 'N/A')
             users_count = details.get('users_count', 'N/A')
             duration = details.get('duration', 'N/A')
             lines = [
-                "📋 **Summaries Generated**\n",
-                f"📊 Summaries Created: {summaries_count}",
-                f"👥 Users Served: {users_count}",
-                f"⏱️ Duration: {duration}s",
+                "📋 <b>Summaries Generated</b>\n",
+                f"📊 Summaries Created: {escape(str(summaries_count))}",
+                f"👥 Users Served: {escape(str(users_count))}",
+                f"⏱️ Duration: {escape(str(duration))}s",
             ]
             if 'failed_count' in details:
-                lines.append(f"❌ Failed: {details.get('failed_count')}")
-            lines.append(f"📅 Time: {timestamp}")
+                lines.append(f"❌ Failed: {escape(str(details.get('failed_count')))}")
+            lines.append(f"📅 Time: {escape(timestamp)}")
             message = "\n".join(lines)
         elif event_type == "summaries_sent":
             sent_count = details.get('sent_count', 'N/A')
             failed_count = details.get('failed_count', 'N/A')
             message = (
-                f"📤 **Daily Summaries Sent**\n\n"
-                f"✅ Successfully Sent: {sent_count}\n"
-                f"❌ Failed: {failed_count}\n"
-                f"📅 Time: {timestamp}"
+                f"📤 <b>Daily Summaries Sent</b>\n\n"
+                f"✅ Successfully Sent: {escape(str(sent_count))}\n"
+                f"❌ Failed: {escape(str(failed_count))}\n"
+                f"📅 Time: {escape(timestamp)}"
             )
         elif event_type == "cleanup_completed":
             vectors_cleaned = details.get('vectors_cleaned', 'N/A')
             message = (
-                f"🧹 **Cleanup Completed**\n\n"
-                f"🗑️ Old Vectors Removed: {vectors_cleaned}\n"
-                f"📅 Time: {timestamp}"
+                f"🧹 <b>Cleanup Completed</b>\n\n"
+                f"🗑️ Old Vectors Removed: {escape(str(vectors_cleaned))}\n"
+                f"📅 Time: {escape(timestamp)}"
             )
         else:
             message = (
-                f"⚙️ **System Event**\n\n"
-                f"🔄 Event: {event_type}\n"
-                f"📋 Details: {str(details)}\n"
-                f"📅 Time: {timestamp}"
+                f"⚙️ <b>System Event</b>\n\n"
+                f"🔄 Event: {escape(str(event_type))}\n"
+                f"📋 Details: {escape(str(details))}\n"
+                f"📅 Time: {escape(timestamp)}"
             )
         
         await self._send_notification(message)
@@ -224,13 +225,13 @@ class Notifier:
         
         context_str = ""
         if context:
-            context_str = f"\n📋 Context: {str(context)}"
+            context_str = f"\n📋 Context: {escape(str(context))}"
         
         message = (
-            f"🚨 **System Error**\n\n"
-            f"❌ Type: {error_type}\n"
-            f"💬 Message: `{error_message}`{context_str}\n"
-            f"📅 Time: {timestamp}"
+            f"🚨 <b>System Error</b>\n\n"
+            f"❌ Type: {escape(str(error_type))}\n"
+            f"💬 Message: <code>{escape(str(error_message))}</code>{context_str}\n"
+            f"📅 Time: {escape(timestamp)}"
         )
         await self._send_notification(message)
     
@@ -239,17 +240,17 @@ class Notifier:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         message = (
-            f"📊 **Daily Statistics**\n\n"
-            f"👥 Total Users: {stats.get('total_users', 'N/A')}\n"
-            f"🆕 New Users Today: {stats.get('new_users_today', 'N/A')}\n"
-            f"📨 Messages Collected: {stats.get('messages_collected', 'N/A')}\n"
-            f"🎯 Messages Filtered: {stats.get('messages_filtered', 'N/A')}\n"
-            f"📋 Summaries Generated: {stats.get('summaries_generated', 'N/A')}\n"
-            f"📤 Summaries Sent: {stats.get('summaries_sent', 'N/A')}\n"
-            f"❌ Errors Today: {stats.get('errors_today', 'N/A')}\n"
-            f"🚫 Blocked Users: {stats.get('blocked_users', 'N/A')}\n"
-            f"😴 Inactive Users: {stats.get('inactive_users', 'N/A')}\n"
-            f"📅 Date: {timestamp}"
+            f"📊 <b>Daily Statistics</b>\n\n"
+            f"👥 Total Users: {escape(str(stats.get('total_users', 'N/A')))}\n"
+            f"🆕 New Users Today: {escape(str(stats.get('new_users_today', 'N/A')))}\n"
+            f"📨 Messages Collected: {escape(str(stats.get('messages_collected', 'N/A')))}\n"
+            f"🎯 Messages Filtered: {escape(str(stats.get('messages_filtered', 'N/A')))}\n"
+            f"📋 Summaries Generated: {escape(str(stats.get('summaries_generated', 'N/A')))}\n"
+            f"📤 Summaries Sent: {escape(str(stats.get('summaries_sent', 'N/A')))}\n"
+            f"❌ Errors Today: {escape(str(stats.get('errors_today', 'N/A')))}\n"
+            f"🚫 Blocked Users: {escape(str(stats.get('blocked_users', 'N/A')))}\n"
+            f"😴 Inactive Users: {escape(str(stats.get('inactive_users', 'N/A')))}\n"
+            f"📅 Date: {escape(timestamp)}"
         )
         await self._send_notification(message)
 

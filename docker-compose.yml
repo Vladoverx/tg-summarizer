@@ -10,6 +10,8 @@ services:
     environment:
       # Point SQLAlchemy to a file inside the mounted /data folder by default
       - DATABASE_URL=${DATABASE_URL:-sqlite:////data/tg_summarizer.db}
+      # Ensure all naive timestamps resolve to UTC inside the container
+      - TZ=${TZ:-Etc/UTC}
       # Configure Qdrant URL for cloud deployment (must be set in .env)
       - QDRANT_URL=${QDRANT_URL}
       - QDRANT_API_KEY=${QDRANT_API_KEY:-}

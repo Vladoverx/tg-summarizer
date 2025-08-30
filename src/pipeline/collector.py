@@ -20,6 +20,7 @@ from utils.embedder import get_embeddings, get_embedding_dimension, get_embedder
 from utils.text_utils import clean_text
 from utils.stats_tracker import StatsTracker
 from utils.user_tracker import get_user_tracker
+from utils.datetime_utils import utc_now, to_utc
 
 load_dotenv()
 
@@ -226,7 +227,7 @@ class TelegramCollector:
 
         with SessionLocal() as session:
             users = session.query(User).all()
-            threshold_date = datetime.now() - timedelta(days=inactive_days_threshold)
+            threshold_date = utc_now() - timedelta(days=inactive_days_threshold)
             active_users = []
             for user in users:
                 if user.telegram_id in getattr(user_tracker, 'blocked_users', set()):
@@ -234,6 +235,7 @@ class TelegramCollector:
                 last_seen = getattr(user_tracker, 'last_activity', {}).get(user.id)
                 if not last_seen:
                     last_seen = user.created_at
+                last_seen = to_utc(last_seen)
                 if last_seen and last_seen < threshold_date:
                     continue
                 active_users.append(user)
@@ -246,7 +248,7 @@ class TelegramCollector:
             sources = list(source_set.values())
 
         logger.info(f"Found {len(sources)} unique sources from active users.")
-        now = datetime.now(timezone.utc)
+        now = utc_now()
         min_date = (now - timedelta(days=days_back)).replace(hour=0, minute=0, second=0, microsecond=0)
         logger.info(f"Collecting messages from {len(sources)} sources since {min_date}.")
 
